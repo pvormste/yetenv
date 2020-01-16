@@ -1,4 +1,4 @@
-[![GoDoc](https://godoc.org/github.com/pvormste/yetwebutils/yetenv?status.svg)](https://godoc.org/github.com/pvormste/yetwebutils/yetenv)
+[![GoDoc](https://godoc.org/github.com/pvormste/yetenv?status.svg)](https://godoc.org/github.com/pvormste/yetenv)
 
 # yetenv
 
