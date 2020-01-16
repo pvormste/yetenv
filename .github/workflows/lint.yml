@@ -1,0 +1,12 @@
+name: lint
+on: push
+
+jobs:
+  golangci-lint:
+    runs-on: ubuntu-latest
+    container: golangci/golangci-lint:latest-alpine
+    steps:
+      - uses: actions/checkout@v2
+      - name: run
+        run: |
+          golangci-lint run ./...
