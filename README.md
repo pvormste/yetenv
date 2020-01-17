@@ -12,6 +12,12 @@ The `ENVIRONMENT` values are not case-sensitives.
 | `staging` | yetenv.Staging |
 | any other value | yetenv.Develop |
 
+## Install
+
+```bash
+go get -u github.com/pvormste/yetenv
+```
+
 ## Usage
 
 ```bash
