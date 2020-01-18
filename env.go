@@ -5,8 +5,10 @@ import (
 	"strings"
 )
 
+// DefaultVariableName defines the default name of the environment variable.
+var DefaultVariableName = "ENVIRONMENT"
+
 const (
-	environmentVariableName            = "ENVIRONMENT"
 	environmentVariableValueProduction = "production"
 	environmentVariableValueStaging    = "staging"
 )
@@ -20,10 +22,21 @@ const (
 )
 
 // GetEnvironment returns the current Environment value depending on the OS environment
-// value of the variable ENVIRONMENT.
+// value of the variable defined by DefaultVariableName.
 func GetEnvironment() Environment {
-	envRaw := os.Getenv(environmentVariableName)
-	env := strings.ToLower(envRaw)
+	envRaw := os.Getenv(DefaultVariableName)
+	return environmentFromVariableValue(envRaw)
+}
+
+// GetEnvironmentFromVariable returns the current Environment value depending on the OS environment
+// value of the variable provided by the parameter.
+func GetEnvironmentFromVariable(variableName string) Environment {
+	envRaw := os.Getenv(variableName)
+	return environmentFromVariableValue(envRaw)
+}
+
+func environmentFromVariableValue(variableValue string) Environment {
+	env := strings.ToLower(variableValue)
 
 	switch env {
 	case environmentVariableValueProduction:
