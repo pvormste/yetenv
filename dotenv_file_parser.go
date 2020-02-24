@@ -1,7 +1,6 @@
 package yetenv
 
 import (
-	"errors"
 	"io/ioutil"
 
 	"github.com/pvormste/yeterr"
@@ -9,13 +8,9 @@ import (
 
 var treatEnvFileNotFoundAsFatalError = false
 
-var errEnvFileNotFound = errors.New("could not find .env file")
-
 const (
 	flagEnvFileNotFound yeterr.ErrorFlag = "envFileNotFound"
-)
 
-const (
 	metadataFilePathKey string = "file_path"
 )
 
