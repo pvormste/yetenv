@@ -49,3 +49,49 @@ func TestDotenvFileParser_readBytesFromFile(t *testing.T) {
 		assert.Equal(t, 0, parser.occurredErrors.Count())
 	})
 }
+
+func TestIsLineValid(t *testing.T) {
+	t.Run("should return true for valid cases", func(t *testing.T) {
+		lineCases := []string{
+			`VARIABLE=value`,
+			`VARIABLE="many values"`,
+			`VARIABLE="many_values"`,
+			`VARIABLE007="value"`,
+			`VARIABLE=many values`,
+			`VAR_IABLE=value`,
+			`VAR_IAB_LE="value"`,
+			`VARIABLE="value"       `,
+			`      VARIABLE="value"`,
+			`		VARIABLE=value`,
+			`export VARIABLE="value"`,
+			`    export VARIABLE="value"`,
+		}
+
+		for _, lineCase := range lineCases {
+			t.Run(lineCase, func(t *testing.T) {
+				parser := newDotenvFileParser()
+				isValid := parser.isLineValid(lineCase)
+
+				assert.True(t, isValid)
+			})
+		}
+	})
+
+	t.Run("should return false for invalid cases", func(t *testing.T) {
+		lineCases := []string{
+			`VARIABLE value`,
+			`VAR_IABLE value`,
+			`=value`,
+			`="value"`,
+		}
+
+		for _, lineCase := range lineCases {
+			t.Run(lineCase, func(t *testing.T) {
+				parser := newDotenvFileParser()
+				isValid := parser.isLineValid(lineCase)
+
+				assert.False(t, isValid)
+			})
+		}
+	})
+}
