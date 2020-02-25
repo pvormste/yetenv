@@ -1,6 +1,7 @@
 package yetenv
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -94,4 +95,25 @@ func TestIsLineValid(t *testing.T) {
 			})
 		}
 	})
+}
+
+func TestSanitizeLine(t *testing.T) {
+	linesToSanitize := []string{
+		`   VAR_IAB_LE="value"   `,
+		`   export VAR_IAB_LE="value"   `,
+	}
+
+	expectedSanitizedLines := []string{
+		`VAR_IAB_LE="value"`,
+		`VAR_IAB_LE="value"`,
+	}
+
+	for i := 0; i < len(linesToSanitize); i++ {
+		t.Run(fmt.Sprintf("should successfully sanitize line: %s", linesToSanitize[i]), func(t *testing.T) {
+			parser := newDotenvFileParser()
+			sanitizedLine := parser.sanitizeLine(linesToSanitize[i])
+
+			assert.Equal(t, expectedSanitizedLines[i], sanitizedLine)
+		})
+	}
 }

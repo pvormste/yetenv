@@ -3,6 +3,7 @@ package yetenv
 import (
 	"io/ioutil"
 	"regexp"
+	"strings"
 
 	"github.com/pvormste/yeterr"
 )
@@ -14,18 +15,21 @@ const (
 
 	metadataFilePathKey string = "file_path"
 
-	dotenvLineRegex string = `^(\s)*(export)?(\s)*([a-zA-Z_0-9])+=(")?(.)*(")?$`
+	dotenvLineRegex   string = `^(\s)*(export)?(\s)*([a-zA-Z_0-9])+=(")?(.)*(")?$`
+	dotenvExportRegex string = `^(\s)*(export)?(\s)*`
 )
 
 type dotenvFileParser struct {
 	occurredErrors yeterr.Collection
 	lineRegEx      *regexp.Regexp
+	exportRegEx    *regexp.Regexp
 }
 
 func newDotenvFileParser() dotenvFileParser {
 	return dotenvFileParser{
 		occurredErrors: yeterr.NewErrorCollection(),
 		lineRegEx:      regexp.MustCompile(dotenvLineRegex),
+		exportRegEx:    regexp.MustCompile(dotenvExportRegex),
 	}
 }
 
@@ -53,7 +57,14 @@ func (p *dotenvFileParser) isLineValid(line string) bool {
 }
 
 func (p *dotenvFileParser) sanitizeLine(line string) string {
-	return ""
+	if p.exportRegEx.MatchString(line) {
+		splittedLine := p.exportRegEx.Split(line, 2)
+		if len(splittedLine) > 1 {
+			line = splittedLine[1]
+		}
+	}
+
+	return strings.Trim(line, " ")
 }
 
 func (p *dotenvFileParser) parseSanitizedLine(sanitizedLine string) (variable string, value string) {
