@@ -1,6 +1,9 @@
 package yetenv
 
 import (
+	"bufio"
+	"bytes"
+	"errors"
 	"io/ioutil"
 	"regexp"
 	"strings"
@@ -12,12 +15,15 @@ var treatEnvFileNotFoundAsFatalError = false
 
 const (
 	flagEnvFileNotFound yeterr.ErrorFlag = "envFileNotFound"
+	flagInvalidLine     yeterr.ErrorFlag = "invalidLine"
 
 	metadataFilePathKey string = "file_path"
 
 	dotenvLineRegex   string = `^(\s)*(export)?(\s)*([a-zA-Z_0-9])+=(")?(.)*(")?$`
 	dotenvExportRegex string = `^(\s)*(export)?(\s)*`
 )
+
+var errInvalidDotenvLine = errors.New("line is not a valid dotenv assignent")
 
 type dotenvFileParser struct {
 	occurredErrors yeterr.Collection
@@ -68,9 +74,35 @@ func (p *dotenvFileParser) sanitizeLine(line string) string {
 }
 
 func (p *dotenvFileParser) parseSanitizedLine(sanitizedLine string) (variable string, value string) {
-	return "", ""
+	splittedLine := strings.SplitN(sanitizedLine, "=", 2)
+	variable = splittedLine[0]
+
+	if len(splittedLine) > 1 {
+		value = strings.Trim(splittedLine[1], `"`)
+		return variable, value
+	}
+
+	return variable, ""
 }
 
-func (p *dotenvFileParser) parseFromBytes(content []byte) {
+func (p *dotenvFileParser) parseFromBytes(content []byte) (variables dotenvVariables) {
+	bytesBuffer := bytes.NewBuffer(content)
+	scanner := bufio.NewScanner(bytesBuffer)
+	variables = make(map[string]string)
 
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if !p.isLineValid(line) {
+			errMetadata := yeterr.ErrorMetadata{"line": line}
+			p.occurredErrors.AddFlaggedError(errInvalidDotenvLine, errMetadata, flagInvalidLine)
+			continue
+		}
+
+		sanitizedLine := p.sanitizeLine(line)
+		variable, value := p.parseSanitizedLine(sanitizedLine)
+		variables[variable] = value
+	}
+
+	return variables
 }

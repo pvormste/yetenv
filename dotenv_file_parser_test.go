@@ -117,3 +117,67 @@ func TestSanitizeLine(t *testing.T) {
 		})
 	}
 }
+
+func TestParseSanitizedLine(t *testing.T) {
+	t.Run("should parse successfully sanitized line:", func(t *testing.T) {
+		sanitizedLines := []string{
+			`VAR_IAB_LE="value"`,
+			`VARIABLE=value`,
+			`VARIABLE10="value=123"`,
+		}
+
+		expectedVariable := []string{
+			"VAR_IAB_LE",
+			"VARIABLE",
+			"VARIABLE10",
+		}
+
+		expectedValue := []string{
+			"value",
+			"value",
+			"value=123",
+		}
+
+		for i, sanitizedLine := range sanitizedLines {
+			t.Run(sanitizedLine, func(t *testing.T) {
+				parser := newDotenvFileParser()
+				variable, value := parser.parseSanitizedLine(sanitizedLine)
+
+				assert.Equal(t, expectedVariable[i], variable)
+				assert.Equal(t, expectedValue[i], value)
+			})
+		}
+	})
+}
+
+func TestParseFromBytes(t *testing.T) {
+	t.Run("should return empty dotenvVariables when content is empty", func(t *testing.T) {
+		content := []byte("")
+
+		parser := newDotenvFileParser()
+		variables := parser.parseFromBytes(content)
+
+		assert.Equal(t, 0, variables.count())
+		assert.Equal(t, 0, parser.occurredErrors.Count())
+	})
+
+	t.Run("should return empty dotenvVariables when content does not contain valid variables", func(t *testing.T) {
+		content := []byte("VARIABLE1 value1\nVARIABLE2 value2")
+
+		parser := newDotenvFileParser()
+		variables := parser.parseFromBytes(content)
+
+		assert.Equal(t, 0, variables.count())
+		assert.Equal(t, 2, parser.occurredErrors.Count())
+	})
+
+	t.Run("should successfully parse dotenv variables and values", func(t *testing.T) {
+		content := []byte("VARIABLE1=value1\nexport VARIABLE2=value2")
+
+		parser := newDotenvFileParser()
+		variables := parser.parseFromBytes(content)
+
+		assert.Equal(t, dotenvVariables{"VARIABLE1": "value1", "VARIABLE2": "value2"}, variables)
+		assert.Equal(t, 0, parser.occurredErrors.Count())
+	})
+}
