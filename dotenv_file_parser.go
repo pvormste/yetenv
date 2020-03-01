@@ -39,6 +39,16 @@ func newDotenvFileParser() dotenvFileParser {
 	}
 }
 
+func (p *dotenvFileParser) parse(pathToFile string) (variables dotenvVariables, ok bool) {
+	fileContent, ok := p.readBytesFromFile(pathToFile)
+	if !ok {
+		return nil, false
+	}
+
+	variables = p.parseFromBytes(fileContent)
+	return variables, true
+}
+
 func (p *dotenvFileParser) readBytesFromFile(pathToFile string) (content []byte, ok bool) {
 	content, err := ioutil.ReadFile(pathToFile)
 	if err == nil {

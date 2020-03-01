@@ -10,7 +10,28 @@ import (
 const (
 	pathToNonExistingEnvFile = "./testdata/.env.not-existing"
 	pathToEnvMinimal         = "./testdata/.env.minimal"
+	pathToEnvValid           = "./testdata/.env.valid"
 )
+
+func TestDotenvFileParser_parse(t *testing.T) {
+	t.Run("should return not ok when file cant be read", func(t *testing.T) {
+		parser := newDotenvFileParser()
+		vars, ok := parser.parse(pathToNonExistingEnvFile)
+
+		assert.False(t, ok)
+		assert.Nil(t, vars)
+	})
+
+	t.Run("should successfully parse a dotenv file", func(t *testing.T) {
+		parser := newDotenvFileParser()
+		vars, ok := parser.parse(pathToEnvValid)
+
+		assert.True(t, ok)
+		assert.Equal(t, "world", vars["HELLO"])
+		assert.Equal(t, "value", vars["MY_VAR"])
+		assert.Equal(t, "your value", vars["YOUR_VAR"])
+	})
+}
 
 func TestDotenvFileParser_readBytesFromFile(t *testing.T) {
 	t.Run("should add an error to occurredErrors when .env file cant be found but not a fatalError", func(t *testing.T) {
