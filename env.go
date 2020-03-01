@@ -3,6 +3,8 @@ package yetenv
 import (
 	"os"
 	"strings"
+
+	"github.com/pvormste/yeterr"
 )
 
 // DefaultVariableName defines the default name of the environment variable.
@@ -19,6 +21,11 @@ const (
 	Production Environment = "production"
 	Staging    Environment = "staging"
 	Develop    Environment = "develop"
+
+	DefaultEnvFileCustom     string = "./.env"
+	DefaultEnvFileDevelop    string = "./.env.develop"
+	DefaultEnvFileStaging    string = "./.env.staging"
+	DefaultEnvFileProduction string = "./.env.production"
 )
 
 // GetEnvironment returns the current Environment value depending on the OS environment
@@ -46,4 +53,26 @@ func environmentFromVariableValue(variableValue string) Environment {
 	}
 
 	return Develop
+}
+
+type EnvLoader struct {
+	OccurredErrors     yeterr.Collection
+	CurrentEnvironment Environment
+	Variables          EnvVariables
+	EnvFileCustom      string
+	EnvFileDevelop     string
+	EnvFileStaging     string
+	EnvFileProduction  string
+}
+
+func NewEnvLoader() EnvLoader {
+	return EnvLoader{
+		OccurredErrors:     yeterr.NewErrorCollection(),
+		CurrentEnvironment: GetEnvironment(),
+		Variables:          EnvVariables{},
+		EnvFileCustom:      DefaultEnvFileCustom,
+		EnvFileDevelop:     DefaultEnvFileDevelop,
+		EnvFileStaging:     DefaultEnvFileStaging,
+		EnvFileProduction:  DefaultEnvFileProduction,
+	}
 }
