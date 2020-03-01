@@ -172,23 +172,23 @@ func TestParseSanitizedLine(t *testing.T) {
 }
 
 func TestParseFromBytes(t *testing.T) {
-	t.Run("should return empty dotenvVariables when content is empty", func(t *testing.T) {
+	t.Run("should return empty EnvVariables when content is empty", func(t *testing.T) {
 		content := []byte("")
 
 		parser := newDotenvFileParser()
 		variables := parser.parseFromBytes(content)
 
-		assert.Equal(t, 0, variables.count())
+		assert.Equal(t, 0, variables.Count())
 		assert.Equal(t, 0, parser.occurredErrors.Count())
 	})
 
-	t.Run("should return empty dotenvVariables when content does not contain valid variables", func(t *testing.T) {
+	t.Run("should return empty EnvVariables when content does not contain valid variables", func(t *testing.T) {
 		content := []byte("VARIABLE1 value1\nVARIABLE2 value2")
 
 		parser := newDotenvFileParser()
 		variables := parser.parseFromBytes(content)
 
-		assert.Equal(t, 0, variables.count())
+		assert.Equal(t, 0, variables.Count())
 		assert.Equal(t, 2, parser.occurredErrors.Count())
 	})
 
@@ -198,7 +198,7 @@ func TestParseFromBytes(t *testing.T) {
 		parser := newDotenvFileParser()
 		variables := parser.parseFromBytes(content)
 
-		assert.Equal(t, dotenvVariables{"VARIABLE1": "value1", "VARIABLE2": "value2"}, variables)
+		assert.Equal(t, EnvVariables{"VARIABLE1": "value1", "VARIABLE2": "value2"}, variables)
 		assert.Equal(t, 0, parser.occurredErrors.Count())
 	})
 }

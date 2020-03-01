@@ -39,7 +39,7 @@ func newDotenvFileParser() dotenvFileParser {
 	}
 }
 
-func (p *dotenvFileParser) parse(pathToFile string) (variables dotenvVariables, ok bool) {
+func (p *dotenvFileParser) parse(pathToFile string) (variables EnvVariables, ok bool) {
 	fileContent, ok := p.readBytesFromFile(pathToFile)
 	if !ok {
 		return nil, false
@@ -95,7 +95,7 @@ func (p *dotenvFileParser) parseSanitizedLine(sanitizedLine string) (variable st
 	return variable, ""
 }
 
-func (p *dotenvFileParser) parseFromBytes(content []byte) (variables dotenvVariables) {
+func (p *dotenvFileParser) parseFromBytes(content []byte) (variables EnvVariables) {
 	bytesBuffer := bytes.NewBuffer(content)
 	scanner := bufio.NewScanner(bytesBuffer)
 	variables = make(map[string]string)
