@@ -1,4 +1,4 @@
-package yetenv
+package dotenv
 
 import (
 	"bufio"
@@ -25,21 +25,21 @@ const (
 
 var errInvalidDotenvLine = errors.New("line is not a valid dotenv assignent")
 
-type dotenvFileParser struct {
+type FileParser struct {
 	occurredErrors yeterr.Collection
 	lineRegEx      *regexp.Regexp
 	exportRegEx    *regexp.Regexp
 }
 
-func newDotenvFileParser() dotenvFileParser {
-	return dotenvFileParser{
+func NewFileParser() FileParser {
+	return FileParser{
 		occurredErrors: yeterr.NewErrorCollection(),
 		lineRegEx:      regexp.MustCompile(dotenvLineRegex),
 		exportRegEx:    regexp.MustCompile(dotenvExportRegex),
 	}
 }
 
-func (p *dotenvFileParser) parse(pathToFile string) (variables EnvVariables, ok bool) {
+func (p *FileParser) Parse(pathToFile string) (variables Variables, ok bool) {
 	fileContent, ok := p.readBytesFromFile(pathToFile)
 	if !ok {
 		return nil, false
@@ -49,7 +49,7 @@ func (p *dotenvFileParser) parse(pathToFile string) (variables EnvVariables, ok 
 	return variables, true
 }
 
-func (p *dotenvFileParser) readBytesFromFile(pathToFile string) (content []byte, ok bool) {
+func (p *FileParser) readBytesFromFile(pathToFile string) (content []byte, ok bool) {
 	content, err := ioutil.ReadFile(pathToFile)
 	if err == nil {
 		return content, true
@@ -68,11 +68,11 @@ func (p *dotenvFileParser) readBytesFromFile(pathToFile string) (content []byte,
 	return nil, false
 }
 
-func (p *dotenvFileParser) isLineValid(line string) bool {
+func (p *FileParser) isLineValid(line string) bool {
 	return p.lineRegEx.MatchString(line)
 }
 
-func (p *dotenvFileParser) sanitizeLine(line string) string {
+func (p *FileParser) sanitizeLine(line string) string {
 	if p.exportRegEx.MatchString(line) {
 		splittedLine := p.exportRegEx.Split(line, 2)
 		if len(splittedLine) > 1 {
@@ -83,7 +83,7 @@ func (p *dotenvFileParser) sanitizeLine(line string) string {
 	return strings.Trim(line, " ")
 }
 
-func (p *dotenvFileParser) parseSanitizedLine(sanitizedLine string) (variable string, value string) {
+func (p *FileParser) parseSanitizedLine(sanitizedLine string) (variable string, value string) {
 	splittedLine := strings.SplitN(sanitizedLine, "=", 2)
 	variable = splittedLine[0]
 
@@ -95,7 +95,7 @@ func (p *dotenvFileParser) parseSanitizedLine(sanitizedLine string) (variable st
 	return variable, ""
 }
 
-func (p *dotenvFileParser) parseFromBytes(content []byte) (variables EnvVariables) {
+func (p *FileParser) parseFromBytes(content []byte) (variables Variables) {
 	bytesBuffer := bytes.NewBuffer(content)
 	scanner := bufio.NewScanner(bytesBuffer)
 	variables = make(map[string]string)

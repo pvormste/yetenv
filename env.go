@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"github.com/pvormste/yeterr"
+
+	"github.com/pvormste/yetenv/dotenv"
 )
 
 // DefaultVariableName defines the default name of the environment variable.
@@ -58,7 +60,7 @@ func environmentFromVariableValue(variableValue string) Environment {
 type EnvLoader struct {
 	OccurredErrors     yeterr.Collection
 	CurrentEnvironment Environment
-	Variables          EnvVariables
+	Variables          dotenv.Variables
 	EnvFileCustom      string
 	EnvFileDevelop     string
 	EnvFileStaging     string
@@ -69,7 +71,7 @@ func NewEnvLoader() EnvLoader {
 	return EnvLoader{
 		OccurredErrors:     yeterr.NewErrorCollection(),
 		CurrentEnvironment: GetEnvironment(),
-		Variables:          EnvVariables{},
+		Variables:          dotenv.Variables{},
 		EnvFileCustom:      DefaultEnvFileCustom,
 		EnvFileDevelop:     DefaultEnvFileDevelop,
 		EnvFileStaging:     DefaultEnvFileStaging,
