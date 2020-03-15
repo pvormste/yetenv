@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/pvormste/yeterr"
@@ -78,8 +79,42 @@ func (e *EnvInjector) injectIntoStruct(input injectionInput, variables dotenv.Va
 	return nil
 }
 
-func (e *EnvInjector) setStructValueByType(structName string, fieldName string, fieldType reflect.Value, envValue string) {
+func (e *EnvInjector) setStructFieldValue(field reflect.Value, envValue string) bool {
+	if len(envValue) == 0 {
+		return true
+	}
 
+	var (
+		err        error
+		parsedBool bool
+	)
+
+	/*
+		if field.CanAddr() {
+			field = field.Addr()
+		}
+	*/
+	for field.CanAddr() {
+		field = field.Addr()
+	}
+
+	fieldValue := field.Elem()
+
+	switch fieldValue.Kind() {
+	case reflect.Bool:
+		parsedBool, err = strconv.ParseBool(envValue)
+		if err == nil {
+			fieldValue.SetBool(parsedBool)
+		}
+	default:
+		return false
+	}
+
+	if err != nil {
+		return false
+	}
+
+	return true
 }
 
 func (e *EnvInjector) getEnvValue(variables dotenv.Variables, fieldName string, structTagValue string) string {

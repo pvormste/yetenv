@@ -2,6 +2,7 @@ package injector
 
 import (
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,6 +10,44 @@ import (
 
 	"github.com/pvormste/yetenv/dotenv"
 )
+
+type testStruct struct {
+	BoolValue bool
+	BoolPtr   *bool
+}
+
+func (ts *testStruct) fieldValueByName(fieldName string) reflect.Value {
+	testStructPtr := reflect.ValueOf(ts)
+	testStructValue := testStructPtr.Elem()
+	return testStructValue.FieldByName(fieldName)
+}
+
+func TestEnvInjector_setStructFieldValue(t *testing.T) {
+	t.Run("bool", func(t *testing.T) {
+		t.Run("should set successfully a bool value", func(t *testing.T) {
+			instance := &testStruct{}
+			field := instance.fieldValueByName("BoolValue")
+
+			injector := NewEnvInjector()
+			success := injector.setStructFieldValue(field, "true")
+
+			assert.True(t, success)
+			assert.Equal(t, true, instance.BoolValue)
+		})
+
+		t.Run("should set successfully a *bool ptr", func(t *testing.T) {
+			instance := &testStruct{}
+			field := instance.fieldValueByName("BoolPtr")
+
+			injector := NewEnvInjector()
+			success := injector.setStructFieldValue(field, "true")
+
+			assert.True(t, success)
+			assert.Equal(t, true, *instance.BoolPtr)
+		})
+	})
+
+}
 
 func TestEnvInjector_getEnvValue(t *testing.T) {
 	t.Run("when struct tag is NOT set", func(t *testing.T) {
