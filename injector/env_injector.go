@@ -2,6 +2,7 @@ package injector
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"reflect"
 	"strconv"
@@ -10,6 +11,14 @@ import (
 	"github.com/pvormste/yeterr"
 
 	"github.com/pvormste/yetenv/dotenv"
+)
+
+const (
+	ErrorFlagFailedTypeParsing yeterr.ErrorFlag = "failed_type_parsing"
+	ErrorFlagUnhandledType     yeterr.ErrorFlag = "unhandled_type"
+
+	ErrorMetadataKeyKind     = "kind"
+	ErrorMetadataKeyEnvValue = "envValue"
 )
 
 var errRequiredPointer = errors.New("struct should be a pointer (*struct)")
@@ -85,16 +94,15 @@ func (e *EnvInjector) setStructFieldValue(field reflect.Value, envValue string) 
 	}
 
 	var (
-		err        error
-		parsedBool bool
+		err         error
+		errFlag     yeterr.ErrorFlag
+		parsedBool  bool
+		parsedFloat float64
+		parsedInt   int64
+		parsedUInt  uint64
 	)
 
-	/*
-		if field.CanAddr() {
-			field = field.Addr()
-		}
-	*/
-	for field.CanAddr() {
+	if field.CanAddr() {
 		field = field.Addr()
 	}
 
@@ -106,11 +114,40 @@ func (e *EnvInjector) setStructFieldValue(field reflect.Value, envValue string) 
 		if err == nil {
 			fieldValue.SetBool(parsedBool)
 		}
+	case reflect.Float32, reflect.Float64:
+		parsedFloat, err = strconv.ParseFloat(envValue, fieldValue.Type().Bits())
+		if err == nil {
+			fieldValue.SetFloat(parsedFloat)
+		}
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		parsedInt, err = strconv.ParseInt(envValue, 10, fieldValue.Type().Bits())
+		if err == nil {
+			fieldValue.SetInt(parsedInt)
+		}
+	case reflect.String:
+		fieldValue.SetString(envValue)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		parsedUInt, err = strconv.ParseUint(envValue, 10, fieldValue.Type().Bits())
+		if err == nil {
+			fieldValue.SetUint(parsedUInt)
+		}
 	default:
-		return false
+		errFlag = ErrorFlagUnhandledType
+		err = errors.New(fmt.Sprintf("the type of kind '%s' is not handled", fieldValue.Type().Kind().String()))
 	}
 
 	if err != nil {
+		errMetadata := yeterr.ErrorMetadata{
+			ErrorMetadataKeyKind:     fieldValue.Type().Kind().String(),
+			ErrorMetadataKeyEnvValue: envValue,
+		}
+
+		if errFlag == "" {
+			errFlag = ErrorFlagFailedTypeParsing
+		}
+
+		e.OccurredErrors.AddFlaggedError(err, errMetadata, errFlag)
+
 		return false
 	}
 
