@@ -21,16 +21,14 @@ const (
 	ErrorMetadataKeyEnvValue   = "envValue"
 	ErrorMetadataKeyFieldName  = "field_name"
 	ErrorMetadataKeyStructName = "struct_name"
+
+	prefixExtensionTemplate     = "%s_"
+	prefixWithFieldNameTemplate = "%s%s"
+
+	structTagEnv = "env"
 )
 
 var errRequiredPointer = errors.New("struct should be a pointer (*struct)")
-
-type injectionInput struct {
-	target          interface{}
-	reflectionValue reflect.Value
-	reflectionType  reflect.Type
-	reflectionKind  reflect.Kind
-}
 
 type TypeInjector interface {
 	InjectVariables(input interface{}, variables dotenv.Variables)
@@ -48,22 +46,16 @@ func NewEnvInjector() EnvInjector {
 }
 
 func (e *EnvInjector) InjectVariables(target interface{}, variables dotenv.Variables) error {
-	targetValue := reflect.ValueOf(target)
-	targetType := targetValue.Type()
-	targetKind := targetValue.Kind()
-
-	input := injectionInput{
-		target:          target,
-		reflectionValue: targetValue,
-		reflectionType:  targetType,
-		reflectionKind:  targetKind,
+	targetPtr := reflect.ValueOf(target)
+	if targetPtr.Kind() != reflect.Ptr {
+		return errRequiredPointer
 	}
 
 	var err error
 
-	switch targetKind {
+	switch targetPtr.Elem().Kind() {
 	case reflect.Struct:
-		err = e.injectIntoStruct(input, variables, "")
+		err = e.injectIntoStruct(targetPtr, variables, "")
 	default:
 	}
 
@@ -74,17 +66,29 @@ func (e *EnvInjector) InjectVariables(target interface{}, variables dotenv.Varia
 	return nil
 }
 
-func (e *EnvInjector) injectIntoStruct(input injectionInput, variables dotenv.Variables, prefix string) error {
-	if input.reflectionKind != reflect.Ptr {
-		return errRequiredPointer
-	}
+func (e *EnvInjector) injectIntoStruct(structPtr reflect.Value, variables dotenv.Variables, prefix string) error {
+	structValue := structPtr.Elem()
+	structName := structValue.Type().Name()
+	for i := 0; i < structValue.Type().NumField(); i++ {
+		field := structValue.Type().Field(i)
+		fieldPtr := structValue.Field(i).Addr()
 
-	dereferencedPtr := input.reflectionValue.Elem()
-	for i := 0; i < dereferencedPtr.NumField(); i++ {
-		/*field := dereferencedPtr.Field(i)
-		fieldName := field.Name
-		fieldType := field.Type
-		envName := field.Tag.Get(envStructField)*/
+		var err error
+
+		switch field.Type.Kind() {
+		case reflect.Struct:
+			newPrefix := e.extendPrefix(prefix, field.Name)
+			err = e.injectIntoStruct(fieldPtr, variables, newPrefix)
+		default:
+			prefixedFieldName := e.appendFieldNameToPrefix(prefix, field.Name)
+			envValue := e.getEnvValue(variables, prefixedFieldName, field.Tag.Get(structTagEnv))
+
+			e.setStructFieldValue(fieldPtr, envValue, prefixedFieldName, structName)
+		}
+
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -158,10 +162,10 @@ func (e *EnvInjector) setStructFieldValue(field reflect.Value, envValue string, 
 	return true
 }
 
-func (e *EnvInjector) getEnvValue(variables dotenv.Variables, fieldName string, structTagValue string) string {
+func (e *EnvInjector) getEnvValue(variables dotenv.Variables, fieldNameWithPrefix string, structTagValue string) string {
 	actualEnvName := structTagValue
 	if len(actualEnvName) == 0 {
-		actualEnvName = strings.ToUpper(fieldName)
+		actualEnvName = strings.ToUpper(fieldNameWithPrefix)
 	}
 
 	actualEnvValue := variables[actualEnvName]
@@ -171,4 +175,13 @@ func (e *EnvInjector) getEnvValue(variables dotenv.Variables, fieldName string, 
 	}
 
 	return actualEnvValue
+}
+
+func (e *EnvInjector) appendFieldNameToPrefix(prefix string, fieldName string) string {
+	return fmt.Sprintf(prefixWithFieldNameTemplate, prefix, strings.ToUpper(fieldName))
+}
+
+func (e *EnvInjector) extendPrefix(currentPrefix string, fieldName string) string {
+	prefixedFieldName := e.appendFieldNameToPrefix(currentPrefix, fieldName)
+	return fmt.Sprintf(prefixExtensionTemplate, prefixedFieldName)
 }

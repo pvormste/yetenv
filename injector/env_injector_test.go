@@ -27,12 +27,41 @@ type testStruct struct {
 	UInt32Value   uint32
 	UInt64Value   uint64
 	UnhandledType *bool
+	Embedded      embeddedStruct
+	Value         string `env:"STRUCT_VALUE"`
+	EnvValue      string `env:"ENV_VALUE"`
+}
+
+type embeddedStruct struct {
+	Value string
 }
 
 func (ts *testStruct) fieldValueByName(fieldName string) reflect.Value {
 	testStructPtr := reflect.ValueOf(ts)
 	testStructValue := testStructPtr.Elem()
 	return testStructValue.FieldByName(fieldName)
+}
+
+func TestEnvInjector_InjectVariables(t *testing.T) {
+	t.Run("should successfully inject values into struct", func(t *testing.T) {
+		variables := dotenv.Variables{
+			"STRUCT_VALUE":   "hello",
+			"EMBEDDED_VALUE": "world",
+		}
+
+		err := os.Setenv("ENV_VALUE", "!")
+		require.NoError(t, err)
+
+		ts := testStruct{}
+
+		injector := NewEnvInjector()
+		err = injector.InjectVariables(&ts, variables)
+
+		assert.NoError(t, err)
+		assert.Equal(t, "hello", ts.Value)
+		assert.Equal(t, "world", ts.Embedded.Value)
+		assert.Equal(t, "!", ts.EnvValue)
+	})
 }
 
 func TestEnvInjector_setStructFieldValue(t *testing.T) {
@@ -271,5 +300,21 @@ func TestEnvInjector_getEnvValue(t *testing.T) {
 			envValue := injector.getEnvValue(dotenv.Variables{"ENV_NAME": "unused value"}, "field", "ENV_NAME")
 			assert.Equal(t, "value", envValue)
 		})
+	})
+}
+
+func TestEnvInjector_extendPrefix(t *testing.T) {
+	t.Run("should extend prefix when current prefix is empty", func(t *testing.T) {
+		injector := NewEnvInjector()
+		extendedPrefix := injector.extendPrefix("", "id")
+
+		assert.Equal(t, "ID_", extendedPrefix)
+	})
+
+	t.Run("should extend prefix when current prefix is not empty", func(t *testing.T) {
+		injector := NewEnvInjector()
+		extendedPrefix := injector.extendPrefix("GITHUB_", "id")
+
+		assert.Equal(t, "GITHUB_ID_", extendedPrefix)
 	})
 }
