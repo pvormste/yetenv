@@ -17,8 +17,10 @@ const (
 	ErrorFlagFailedTypeParsing yeterr.ErrorFlag = "failed_type_parsing"
 	ErrorFlagUnhandledType     yeterr.ErrorFlag = "unhandled_type"
 
-	ErrorMetadataKeyKind     = "kind"
-	ErrorMetadataKeyEnvValue = "envValue"
+	ErrorMetadataKeyKind       = "kind"
+	ErrorMetadataKeyEnvValue   = "envValue"
+	ErrorMetadataKeyFieldName  = "field_name"
+	ErrorMetadataKeyStructName = "struct_name"
 )
 
 var errRequiredPointer = errors.New("struct should be a pointer (*struct)")
@@ -79,7 +81,7 @@ func (e *EnvInjector) injectIntoStruct(input injectionInput, variables dotenv.Va
 
 	dereferencedPtr := input.reflectionValue.Elem()
 	for i := 0; i < dereferencedPtr.NumField(); i++ {
-		/*field := inputType.Field(i)
+		/*field := dereferencedPtr.Field(i)
 		fieldName := field.Name
 		fieldType := field.Type
 		envName := field.Tag.Get(envStructField)*/
@@ -88,7 +90,7 @@ func (e *EnvInjector) injectIntoStruct(input injectionInput, variables dotenv.Va
 	return nil
 }
 
-func (e *EnvInjector) setStructFieldValue(field reflect.Value, envValue string) bool {
+func (e *EnvInjector) setStructFieldValue(field reflect.Value, envValue string, fieldName string, structName string) bool {
 	if len(envValue) == 0 {
 		return true
 	}
@@ -138,8 +140,10 @@ func (e *EnvInjector) setStructFieldValue(field reflect.Value, envValue string) 
 
 	if err != nil {
 		errMetadata := yeterr.ErrorMetadata{
-			ErrorMetadataKeyKind:     fieldValue.Type().Kind().String(),
-			ErrorMetadataKeyEnvValue: envValue,
+			ErrorMetadataKeyStructName: structName,
+			ErrorMetadataKeyFieldName:  fieldName,
+			ErrorMetadataKeyKind:       fieldValue.Type().Kind().String(),
+			ErrorMetadataKeyEnvValue:   envValue,
 		}
 
 		if errFlag == "" {

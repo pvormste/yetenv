@@ -42,7 +42,7 @@ func TestEnvInjector_setStructFieldValue(t *testing.T) {
 			field := instance.fieldValueByName("BoolValue")
 
 			injector := NewEnvInjector()
-			success := injector.setStructFieldValue(field, "true")
+			success := injector.setStructFieldValue(field, "true", "BoolValue", "testStruct")
 
 			assert.True(t, success)
 			assert.Equal(t, true, instance.BoolValue)
@@ -55,7 +55,7 @@ func TestEnvInjector_setStructFieldValue(t *testing.T) {
 			field := instance.fieldValueByName("Float32Value")
 
 			injector := NewEnvInjector()
-			success := injector.setStructFieldValue(field, "3.3")
+			success := injector.setStructFieldValue(field, "3.3", "Float32Value", "testStruct")
 
 			assert.True(t, success)
 			assert.Equal(t, float32(3.3), instance.Float32Value)
@@ -66,7 +66,7 @@ func TestEnvInjector_setStructFieldValue(t *testing.T) {
 			field := instance.fieldValueByName("Float64Value")
 
 			injector := NewEnvInjector()
-			success := injector.setStructFieldValue(field, "3.3")
+			success := injector.setStructFieldValue(field, "3.3", "Float64Value", "testStruct")
 
 			assert.True(t, success)
 			assert.Equal(t, float64(3.3), instance.Float64Value)
@@ -79,7 +79,7 @@ func TestEnvInjector_setStructFieldValue(t *testing.T) {
 			field := instance.fieldValueByName("IntValue")
 
 			injector := NewEnvInjector()
-			success := injector.setStructFieldValue(field, "1")
+			success := injector.setStructFieldValue(field, "1", "IntValue", "testStruct")
 
 			assert.True(t, success)
 			assert.Equal(t, int(1), instance.IntValue)
@@ -90,7 +90,7 @@ func TestEnvInjector_setStructFieldValue(t *testing.T) {
 			field := instance.fieldValueByName("Int8Value")
 
 			injector := NewEnvInjector()
-			success := injector.setStructFieldValue(field, "1")
+			success := injector.setStructFieldValue(field, "1", "Int8Value", "testStruct")
 
 			assert.True(t, success)
 			assert.Equal(t, int8(1), instance.Int8Value)
@@ -101,7 +101,7 @@ func TestEnvInjector_setStructFieldValue(t *testing.T) {
 			field := instance.fieldValueByName("Int16Value")
 
 			injector := NewEnvInjector()
-			success := injector.setStructFieldValue(field, "1")
+			success := injector.setStructFieldValue(field, "1", "Int16Value", "testStruct")
 
 			assert.True(t, success)
 			assert.Equal(t, int16(1), instance.Int16Value)
@@ -112,7 +112,7 @@ func TestEnvInjector_setStructFieldValue(t *testing.T) {
 			field := instance.fieldValueByName("Int32Value")
 
 			injector := NewEnvInjector()
-			success := injector.setStructFieldValue(field, "1")
+			success := injector.setStructFieldValue(field, "1", "Int32Value", "testStruct")
 
 			assert.True(t, success)
 			assert.Equal(t, int32(1), instance.Int32Value)
@@ -123,7 +123,7 @@ func TestEnvInjector_setStructFieldValue(t *testing.T) {
 			field := instance.fieldValueByName("Int64Value")
 
 			injector := NewEnvInjector()
-			success := injector.setStructFieldValue(field, "1")
+			success := injector.setStructFieldValue(field, "1", "Int64Value", "testStruct")
 
 			assert.True(t, success)
 			assert.Equal(t, int64(1), instance.Int64Value)
@@ -136,7 +136,7 @@ func TestEnvInjector_setStructFieldValue(t *testing.T) {
 			field := instance.fieldValueByName("StringValue")
 
 			injector := NewEnvInjector()
-			success := injector.setStructFieldValue(field, "myString")
+			success := injector.setStructFieldValue(field, "myString", "StringValue", "testStruct")
 
 			assert.True(t, success)
 			assert.Equal(t, "myString", instance.StringValue)
@@ -149,7 +149,7 @@ func TestEnvInjector_setStructFieldValue(t *testing.T) {
 			field := instance.fieldValueByName("UIntValue")
 
 			injector := NewEnvInjector()
-			success := injector.setStructFieldValue(field, "1")
+			success := injector.setStructFieldValue(field, "1", "UIntValue", "testStruct")
 
 			assert.True(t, success)
 			assert.Equal(t, uint(1), instance.UIntValue)
@@ -160,7 +160,7 @@ func TestEnvInjector_setStructFieldValue(t *testing.T) {
 			field := instance.fieldValueByName("UInt8Value")
 
 			injector := NewEnvInjector()
-			success := injector.setStructFieldValue(field, "1")
+			success := injector.setStructFieldValue(field, "1", "UInt8Value", "testStruct")
 
 			assert.True(t, success)
 			assert.Equal(t, uint8(1), instance.UInt8Value)
@@ -171,7 +171,7 @@ func TestEnvInjector_setStructFieldValue(t *testing.T) {
 			field := instance.fieldValueByName("UInt16Value")
 
 			injector := NewEnvInjector()
-			success := injector.setStructFieldValue(field, "1")
+			success := injector.setStructFieldValue(field, "1", "UInt16Value", "testStruct")
 
 			assert.True(t, success)
 			assert.Equal(t, uint16(1), instance.UInt16Value)
@@ -182,7 +182,7 @@ func TestEnvInjector_setStructFieldValue(t *testing.T) {
 			field := instance.fieldValueByName("UInt32Value")
 
 			injector := NewEnvInjector()
-			success := injector.setStructFieldValue(field, "1")
+			success := injector.setStructFieldValue(field, "1", "UInt32Value", "testStruct")
 
 			assert.True(t, success)
 			assert.Equal(t, uint32(1), instance.UInt32Value)
@@ -193,7 +193,7 @@ func TestEnvInjector_setStructFieldValue(t *testing.T) {
 			field := instance.fieldValueByName("UInt64Value")
 
 			injector := NewEnvInjector()
-			success := injector.setStructFieldValue(field, "1")
+			success := injector.setStructFieldValue(field, "1", "UInt64Value", "testStruct")
 
 			assert.True(t, success)
 			assert.Equal(t, uint64(1), instance.UInt64Value)
@@ -206,7 +206,7 @@ func TestEnvInjector_setStructFieldValue(t *testing.T) {
 			field := instance.fieldValueByName("UnhandledType")
 
 			injector := NewEnvInjector()
-			success := injector.setStructFieldValue(field, "true")
+			success := injector.setStructFieldValue(field, "true", "UnhandledType", "testStruct")
 
 			assert.False(t, success)
 			assert.Equal(t, ErrorFlagUnhandledType, injector.OccurredErrors.FirstError().Flag)
@@ -217,7 +217,7 @@ func TestEnvInjector_setStructFieldValue(t *testing.T) {
 			field := instance.fieldValueByName("BoolValue")
 
 			injector := NewEnvInjector()
-			success := injector.setStructFieldValue(field, "NotABool")
+			success := injector.setStructFieldValue(field, "NotABool", "BoolValue", "testStruct")
 
 			assert.False(t, success)
 			assert.Equal(t, ErrorFlagFailedTypeParsing, injector.OccurredErrors.FirstError().Flag)
