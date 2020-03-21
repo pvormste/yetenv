@@ -1,7 +1,9 @@
 package yetenv
 
 import (
+	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -35,6 +37,18 @@ const (
 
 type ConditionalLoadFunc func(configLoader *ConfigLoader, currentEnvironment Environment) bool
 
+var DefaultConditionForDevelopEnvironment = func(configLoader *ConfigLoader, currentEnvironment Environment) bool {
+	return currentEnvironment == Develop
+}
+
+var DefaultConditionForStagingEnvironment = func(configLoader *ConfigLoader, currentEnvironment Environment) bool {
+	return currentEnvironment == Staging
+}
+
+var DefaultConditionForProductionEnvironment = func(configLoader *ConfigLoader, currentEnvironment Environment) bool {
+	return currentEnvironment == Production
+}
+
 // DefaultVariableName defines the default name of the environment variable.
 var DefaultVariableName = "ENVIRONMENT"
 
@@ -65,11 +79,17 @@ func environmentFromVariableValue(variableValue string) Environment {
 	return Develop
 }
 
+type loadOrderItem struct {
+	file          string
+	conditionFunc ConditionalLoadFunc
+}
+
 type ConfigLoader struct {
 	LoadPath           string
 	FileExtension      ConfigFileExtension
 	ConfigFiles        map[Environment]string
 	CustomLoadBehavior bool
+	loadOrder          []loadOrderItem
 }
 
 func NewConfigLoader() *ConfigLoader {
@@ -83,37 +103,81 @@ func NewConfigLoader() *ConfigLoader {
 			Custom:     defaultCustomConfigFile,
 		},
 		CustomLoadBehavior: false,
+		loadOrder:          []loadOrderItem{},
 	}
 }
 
 func (c *ConfigLoader) UseLoadPath(path string) *ConfigLoader {
+	c.LoadPath = path
 	return c
 }
 
 func (c *ConfigLoader) UseFileProcessor(extension ConfigFileExtension) *ConfigLoader {
+	c.FileExtension = extension
 	return c
 }
 
 func (c *ConfigLoader) UseFileNameForEnvironment(environment Environment, fileName string) *ConfigLoader {
+	fileExtensions := []ConfigFileExtension{DOTENV, YAML, TOML, JSON}
+	for _, fileExtension := range fileExtensions {
+		if strings.HasSuffix(fileName, string(fileExtension)) {
+			fileName = strings.TrimRight(fileName, string(fileExtension))
+			break
+		}
+	}
+
+	c.ConfigFiles[environment] = fileName
+
 	return c
 }
 
 func (c *ConfigLoader) UseCustomLoadBehavior() *ConfigLoader {
-	return nil
+	c.CustomLoadBehavior = true
+	return c
 }
 
-func (c *ConfigLoader) AddFileForEnvironment(environment Environment) *ConfigLoader {
-	return nil
+func (c *ConfigLoader) LoadFromFileForEnvironment(environment Environment) *ConfigLoader {
+	configFileName := c.ConfigFiles[environment]
+	if c.FileExtension == DOTENV && configFileName == defaultCustomConfigFile {
+		configFileName = ""
+	}
+
+	fullFilePath := c.composeFilePath(c.LoadPath, configFileName, c.FileExtension)
+
+	switch environment {
+	case Develop:
+		c.LoadFromConditionalFile(fullFilePath, DefaultConditionForDevelopEnvironment)
+	case Staging:
+		c.LoadFromConditionalFile(fullFilePath, DefaultConditionForStagingEnvironment)
+	case Production:
+		c.LoadFromConditionalFile(fullFilePath, DefaultConditionForProductionEnvironment)
+	case Custom:
+		c.LoadFromConditionalFile(fullFilePath, nil)
+	}
+
+	return c
 }
 
-func (c *ConfigLoader) AddFile(filePath string) *ConfigLoader {
-	return nil
+func (c *ConfigLoader) LoadFromFile(filePath string) *ConfigLoader {
+	return c
 }
 
-func (c *ConfigLoader) AddConditionalFile(filePath string, loadFunc ConditionalLoadFunc) *ConfigLoader {
-	return nil
+func (c *ConfigLoader) LoadFromConditionalFile(filePath string, conditionFunc ConditionalLoadFunc) *ConfigLoader {
+	c.loadOrder = append(c.loadOrder, loadOrderItem{
+		file:          filePath,
+		conditionFunc: conditionFunc,
+	})
+
+	return c
 }
 
 func (c *ConfigLoader) LoadInto(cfg interface{}) error {
 	return nil
+}
+
+func (c *ConfigLoader) composeFilePath(loadPath string, fileName string, fileExtension ConfigFileExtension) string {
+	fileName = strings.TrimRight(fileName, ".")
+	fullFileName := fmt.Sprintf("%s%s", fileName, string(fileExtension))
+
+	return filepath.Join(loadPath, fullFileName)
 }
