@@ -165,3 +165,19 @@ func TestGetEnvironmentFromVariable(t *testing.T) {
 		}
 	})
 }
+
+func TestNewConfigLoader(t *testing.T) {
+	type Cfg struct {
+	}
+
+	c := Cfg{}
+
+	_ = NewConfigLoader().
+		UseLoadPath("./").
+		UseFileProcessor(YAML).
+		UseFileNameForEnvironment(Production, "prod.yaml").
+		UseCustomLoadBehavior().
+		AddFileForEnvironment(Develop).
+		AddFile("./bla.env").
+		LoadInto(&c)
+}
