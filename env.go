@@ -1,6 +1,7 @@
 package yetenv
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -49,8 +50,20 @@ var DefaultConditionForProductionEnvironment = func(configLoader *ConfigLoader, 
 	return currentEnvironment == Production
 }
 
+type LoadBehavior int
+
+const (
+	LoadBehaviorUnknown LoadBehavior = iota
+	LoadBehaviorDefault
+	LoadBehaviorCustom
+)
+
 // DefaultVariableName defines the default name of the environment variable.
 var DefaultVariableName = "ENVIRONMENT"
+
+var (
+	ErrUnknownLoadBehavior = errors.New("load behavior is unknown - only default or custom load behavior is allowed")
+)
 
 // GetEnvironment returns the current Environment value depending on the OS environment
 // value of the variable defined by DefaultVariableName.
@@ -79,17 +92,12 @@ func environmentFromVariableValue(variableValue string) Environment {
 	return Develop
 }
 
-type loadOrderItem struct {
-	file          string
-	conditionFunc ConditionalLoadFunc
-}
-
 type ConfigLoader struct {
-	LoadPath           string
-	FileExtension      ConfigFileExtension
-	ConfigFiles        map[Environment]string
-	CustomLoadBehavior bool
-	loadOrder          []loadOrderItem
+	LoadPath      string
+	FileExtension ConfigFileExtension
+	ConfigFiles   map[Environment]string
+	LoadBehavior  LoadBehavior
+	loadOrder     []loadOrderItem
 }
 
 func NewConfigLoader() *ConfigLoader {
@@ -102,8 +110,8 @@ func NewConfigLoader() *ConfigLoader {
 			Production: defaultProductionConfigFile,
 			Custom:     defaultCustomConfigFile,
 		},
-		CustomLoadBehavior: false,
-		loadOrder:          []loadOrderItem{},
+		LoadBehavior: LoadBehaviorUnknown,
+		loadOrder:    []loadOrderItem{},
 	}
 }
 
@@ -131,8 +139,18 @@ func (c *ConfigLoader) UseFileNameForEnvironment(environment Environment, fileNa
 	return c
 }
 
+func (c *ConfigLoader) UseLoadBehavior(behavior LoadBehavior) *ConfigLoader {
+	c.LoadBehavior = behavior
+	return c
+}
+
+func (c *ConfigLoader) UseDefaultLoadBehavior() *ConfigLoader {
+	c.UseLoadBehavior(LoadBehaviorDefault)
+	return c
+}
+
 func (c *ConfigLoader) UseCustomLoadBehavior() *ConfigLoader {
-	c.CustomLoadBehavior = true
+	c.UseLoadBehavior(LoadBehaviorCustom)
 	return c
 }
 
@@ -152,13 +170,18 @@ func (c *ConfigLoader) LoadFromFileForEnvironment(environment Environment) *Conf
 	case Production:
 		c.LoadFromConditionalFile(fullFilePath, DefaultConditionForProductionEnvironment)
 	case Custom:
-		c.LoadFromConditionalFile(fullFilePath, nil)
+		c.LoadFromFile(fullFilePath)
 	}
 
 	return c
 }
 
 func (c *ConfigLoader) LoadFromFile(filePath string) *ConfigLoader {
+	c.loadOrder = append(c.loadOrder, loadOrderItem{
+		file:          filePath,
+		conditionFunc: nil,
+	})
+
 	return c
 }
 
@@ -172,6 +195,20 @@ func (c *ConfigLoader) LoadFromConditionalFile(filePath string, conditionFunc Co
 }
 
 func (c *ConfigLoader) LoadInto(cfg interface{}) error {
+	switch c.LoadBehavior {
+	case LoadBehaviorUnknown:
+		return ErrUnknownLoadBehavior
+	case LoadBehaviorDefault:
+		c.setupDefaultLoadBehavior()
+	}
+
+	for _, loadItem := range c.loadOrder {
+		canLoadFile := true
+		if loadItem.conditionFunc != nil {
+			canLoadFile = loadItem.conditionFunc()
+		}
+	}
+
 	return nil
 }
 
@@ -180,4 +217,18 @@ func (c *ConfigLoader) composeFilePath(loadPath string, fileName string, fileExt
 	fullFileName := fmt.Sprintf("%s%s", fileName, string(fileExtension))
 
 	return filepath.Join(loadPath, fullFileName)
+}
+
+func (c *ConfigLoader) setupDefaultLoadBehavior() {
+	c.loadOrder = []loadOrderItem{}
+
+	c.LoadFromFileForEnvironment(Develop)
+	c.LoadFromFileForEnvironment(Staging)
+	c.LoadFromFileForEnvironment(Production)
+	c.LoadFromFileForEnvironment(Custom)
+}
+
+type loadOrderItem struct {
+	file          string
+	conditionFunc ConditionalLoadFunc
 }
