@@ -212,6 +212,14 @@ func TestConfigLoader_UseFileNameForEnvironment(t *testing.T) {
 	assert.Equal(t, "your.dev", configLoader.ConfigFiles[Develop])
 }
 
+func TestConfigLoader_UseEnvironment(t *testing.T) {
+	configLoader := NewConfigLoader()
+	require.Equal(t, Environment(""), configLoader.Environment)
+
+	configLoader.UseEnvironment(Staging)
+	assert.Equal(t, Staging, configLoader.Environment)
+}
+
 func TestConfigLoader_UseLoadBehavior(t *testing.T) {
 	configLoader := NewConfigLoader()
 	require.Equal(t, LoadBehaviorUnknown, configLoader.LoadBehavior)
@@ -317,6 +325,8 @@ func TestConfigLoader_LoadFromConditionalFile(t *testing.T) {
 
 func TestConfigLoader_LoadInto(t *testing.T) {
 	t.Run("should return error if load behavior is not set", func(t *testing.T) {
+		resetEnv()
+
 		c := testConfig{}
 		err := NewConfigLoader().LoadInto(&c)
 
@@ -326,12 +336,12 @@ func TestConfigLoader_LoadInto(t *testing.T) {
 
 	t.Run("default behavior", func(t *testing.T) {
 		t.Run("should load dev and custom config when env=development", func(t *testing.T) {
-			err := os.Setenv(DefaultVariableName, "develop")
-			require.NoError(t, err)
+			resetEnv()
 
 			c := testConfig{}
-			err = NewConfigLoader().
+			err := NewConfigLoader().
 				UseLoadPath("./testdata").
+				UseEnvironment(Develop).
 				UseDefaultLoadBehavior().
 				LoadInto(&c)
 
@@ -348,12 +358,12 @@ func TestConfigLoader_LoadInto(t *testing.T) {
 		})
 
 		t.Run("should load staging and custom config when env=staging", func(t *testing.T) {
-			err := os.Setenv(DefaultVariableName, environmentVariableValueStaging)
-			require.NoError(t, err)
+			resetEnv()
 
 			c := testConfig{}
-			err = NewConfigLoader().
+			err := NewConfigLoader().
 				UseLoadPath("./testdata").
+				UseEnvironment(Staging).
 				UseDefaultLoadBehavior().
 				LoadInto(&c)
 
@@ -370,12 +380,12 @@ func TestConfigLoader_LoadInto(t *testing.T) {
 		})
 
 		t.Run("should load production and custom config when env=production", func(t *testing.T) {
-			err := os.Setenv(DefaultVariableName, environmentVariableValueProduction)
-			require.NoError(t, err)
+			resetEnv()
 
 			c := testConfig{}
-			err = NewConfigLoader().
+			err := NewConfigLoader().
 				UseLoadPath("./testdata").
+				UseEnvironment(Production).
 				UseDefaultLoadBehavior().
 				LoadInto(&c)
 
@@ -392,12 +402,12 @@ func TestConfigLoader_LoadInto(t *testing.T) {
 		})
 
 		t.Run("should load develop and custom config when env=production and file processor is yaml", func(t *testing.T) {
-			err := os.Setenv(DefaultVariableName, "develop")
-			require.NoError(t, err)
+			resetEnv()
 
 			c := testConfig{}
-			err = NewConfigLoader().
+			err := NewConfigLoader().
 				UseLoadPath("./testdata").
+				UseEnvironment(Develop).
 				UseFileProcessor(YAML).
 				UseDefaultLoadBehavior().
 				LoadInto(&c)
@@ -414,6 +424,14 @@ func TestConfigLoader_LoadInto(t *testing.T) {
 			assert.Equal(t, expectedConfig, c)
 		})
 	})
+}
+
+func resetEnv() {
+	_ = os.Unsetenv("DEVELOP")
+	_ = os.Unsetenv("STAGING")
+	_ = os.Unsetenv("PROD")
+	_ = os.Unsetenv("CUSTOM")
+	_ = os.Unsetenv("LAST_FILE")
 }
 
 func TestNewConfigLoader(t *testing.T) {

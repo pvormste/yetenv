@@ -3,6 +3,7 @@ package yetenv
 import (
 	"errors"
 	"fmt"
+	"github.com/ilyakaznacheev/cleanenv"
 	"os"
 	"path/filepath"
 	"strings"
@@ -96,6 +97,7 @@ type ConfigLoader struct {
 	LoadPath      string
 	FileExtension ConfigFileExtension
 	ConfigFiles   map[Environment]string
+	Environment   Environment
 	LoadBehavior  LoadBehavior
 	loadOrder     []loadOrderItem
 }
@@ -110,6 +112,7 @@ func NewConfigLoader() *ConfigLoader {
 			Production: defaultProductionConfigFile,
 			Custom:     defaultCustomConfigFile,
 		},
+		Environment:  "",
 		LoadBehavior: LoadBehaviorUnknown,
 		loadOrder:    []loadOrderItem{},
 	}
@@ -136,6 +139,11 @@ func (c *ConfigLoader) UseFileNameForEnvironment(environment Environment, fileNa
 
 	c.ConfigFiles[environment] = fileName
 
+	return c
+}
+
+func (c *ConfigLoader) UseEnvironment(environment Environment) *ConfigLoader {
+	c.Environment = environment
 	return c
 }
 
@@ -202,11 +210,32 @@ func (c *ConfigLoader) LoadInto(cfg interface{}) error {
 		c.setupDefaultLoadBehavior()
 	}
 
+	if c.Environment == "" {
+		c.Environment = GetEnvironment()
+	}
+
 	for _, loadItem := range c.loadOrder {
 		canLoadFile := true
 		if loadItem.conditionFunc != nil {
-			canLoadFile = loadItem.conditionFunc()
+			canLoadFile = loadItem.conditionFunc(c, c.Environment)
 		}
+
+		if !canLoadFile {
+			continue
+		}
+
+		err := c.loadConfigFromFile(loadItem.file, cfg)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (c *ConfigLoader) loadConfigFromFile(file string, cfg interface{}) error {
+	if fileExists(file) {
+		return cleanenv.ReadConfig(file, cfg)
 	}
 
 	return nil
@@ -226,6 +255,14 @@ func (c *ConfigLoader) setupDefaultLoadBehavior() {
 	c.LoadFromFileForEnvironment(Staging)
 	c.LoadFromFileForEnvironment(Production)
 	c.LoadFromFileForEnvironment(Custom)
+}
+
+func fileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
 }
 
 type loadOrderItem struct {
