@@ -424,6 +424,60 @@ func TestConfigLoader_LoadInto(t *testing.T) {
 			assert.Equal(t, expectedConfig, c)
 		})
 	})
+
+	t.Run("custom behavior", func(t *testing.T) {
+		t.Run("should load a specific file without condition", func(t *testing.T) {
+			resetEnv()
+
+			c := testConfig{}
+			err := NewConfigLoader().
+				UseCustomLoadBehavior().
+				LoadFromFile("./testdata/custom-load.env").
+				LoadInto(&c)
+
+			expectedConfig := testConfig{
+				Develop:    false,
+				Staging:    false,
+				Production: false,
+				Custom:     true,
+				LastFile:   "custom-load",
+			}
+
+			assert.NoError(t, err)
+			assert.Equal(t, expectedConfig, c)
+		})
+
+		t.Run("should load a specific file with condition", func(t *testing.T) {
+			resetEnv()
+
+			developCondition := func(configLoader *ConfigLoader, currentEnvironment Environment) bool {
+				return currentEnvironment == Develop
+			}
+
+			stagingCondition := func(configLoader *ConfigLoader, currentEnvironment Environment) bool {
+				return currentEnvironment == Staging
+			}
+
+			c := testConfig{}
+			err := NewConfigLoader().
+				UseEnvironment(Staging).
+				UseCustomLoadBehavior().
+				LoadFromConditionalFile("./testdata/conditional-load.env", stagingCondition).
+				LoadFromConditionalFile("./testdata/custom-load.env", developCondition).
+				LoadInto(&c)
+
+			expectedConfig := testConfig{
+				Develop:    false,
+				Staging:    false,
+				Production: false,
+				Custom:     true,
+				LastFile:   "conditional-load",
+			}
+
+			assert.NoError(t, err)
+			assert.Equal(t, expectedConfig, c)
+		})
+	})
 }
 
 func resetEnv() {

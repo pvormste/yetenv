@@ -3,10 +3,11 @@ package yetenv
 import (
 	"errors"
 	"fmt"
-	"github.com/ilyakaznacheev/cleanenv"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/ilyakaznacheev/cleanenv"
 )
 
 const (
