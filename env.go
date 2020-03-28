@@ -20,6 +20,7 @@ const (
 	defaultCustomConfigFile     = "cfg"
 )
 
+// Environment defines the environment of an application (e.g. Develop, Staging, Production, etc.)
 type Environment string
 
 const (
@@ -29,6 +30,7 @@ const (
 	Custom     Environment = "custom"
 )
 
+// ConfigFileExtension represents a possible config file extension which is usable by the config loader.
 type ConfigFileExtension string
 
 const (
@@ -38,20 +40,25 @@ const (
 	DOTENV ConfigFileExtension = ".env"
 )
 
+// ConditionalLoadFunc allows to define a condition for a file to be loaded by the config loader.
 type ConditionalLoadFunc func(configLoader *ConfigLoader, currentEnvironment Environment) bool
 
+// DefaultConditionForDevelopEnvironment retuns true when the current environment is Develop otherwise false.
 var DefaultConditionForDevelopEnvironment = func(configLoader *ConfigLoader, currentEnvironment Environment) bool {
 	return currentEnvironment == Develop
 }
 
+// DefaultConditionForStagingEnvironment returns true when the current environment is Staging otherwise false.
 var DefaultConditionForStagingEnvironment = func(configLoader *ConfigLoader, currentEnvironment Environment) bool {
 	return currentEnvironment == Staging
 }
 
+// DefaultConditionForProductionEnvironment returns true when the current environment is Production otherweise false.
 var DefaultConditionForProductionEnvironment = func(configLoader *ConfigLoader, currentEnvironment Environment) bool {
 	return currentEnvironment == Production
 }
 
+// LoadBehavior is used to define the load behavior of the config loader.
 type LoadBehavior int
 
 const (
@@ -94,6 +101,8 @@ func environmentFromVariableValue(variableValue string) Environment {
 	return Develop
 }
 
+// ConfigLoader loads configuration values from files and the OS environment into a configuration struct.
+// It uses the builder pattern and needs to be extecuted by the finishing method.
 type ConfigLoader struct {
 	LoadPath      string
 	FileExtension ConfigFileExtension
@@ -103,6 +112,7 @@ type ConfigLoader struct {
 	loadOrder     []loadOrderItem
 }
 
+// NewConfigLoader initializes a new ConfigLoader builder.
 func NewConfigLoader() *ConfigLoader {
 	return &ConfigLoader{
 		LoadPath:      "./",
@@ -119,16 +129,25 @@ func NewConfigLoader() *ConfigLoader {
 	}
 }
 
+// UseLoadPath can be used to change the load path for the default load behavior. It defaults to "./".
 func (c *ConfigLoader) UseLoadPath(path string) *ConfigLoader {
 	c.LoadPath = path
 	return c
 }
 
+// UseFileProcessor can be used to change the file processor for config files when using the default
+// load behavior. It defaults to "DOTENV".
 func (c *ConfigLoader) UseFileProcessor(extension ConfigFileExtension) *ConfigLoader {
 	c.FileExtension = extension
 	return c
 }
 
+// UseFileNameForEnvironment can be used to change the config file name for a specific environment.
+// Default file names are:
+// Develop     -> 'cfg.dev'
+// Staging     -> 'cfg.staging'
+// Production  -> 'cfg.prod'
+// Custom      -> 'cfg' or '.env'
 func (c *ConfigLoader) UseFileNameForEnvironment(environment Environment, fileName string) *ConfigLoader {
 	fileExtensions := []ConfigFileExtension{DOTENV, YAML, TOML, JSON}
 	for _, fileExtension := range fileExtensions {
@@ -143,26 +162,33 @@ func (c *ConfigLoader) UseFileNameForEnvironment(environment Environment, fileNa
 	return c
 }
 
+// UseEnvironment can be used to change the current environment value of the ConfigLoader.
+// Defaults to the value of the ENVIRONMENT variable.
 func (c *ConfigLoader) UseEnvironment(environment Environment) *ConfigLoader {
 	c.Environment = environment
 	return c
 }
 
+// UseLoadBehavior can be used to set a LoadBehavior to a specific value.
 func (c *ConfigLoader) UseLoadBehavior(behavior LoadBehavior) *ConfigLoader {
 	c.LoadBehavior = behavior
 	return c
 }
 
+// UseDefaultLoadBehavior sets load behavior to LoadBehaviorDefault.
 func (c *ConfigLoader) UseDefaultLoadBehavior() *ConfigLoader {
 	c.UseLoadBehavior(LoadBehaviorDefault)
 	return c
 }
 
+// UseCustomLoadBehavior sets load behavior to LoadBehaviorCustom.
 func (c *ConfigLoader) UseCustomLoadBehavior() *ConfigLoader {
 	c.UseLoadBehavior(LoadBehaviorCustom)
 	return c
 }
 
+// LoadFromFileForEnvironment can be used to reuse environmental load logic for a custom load behavior.
+// For example: LoadFromFileForEnvironment(Develop) will behave the same as in the default load behavior.
 func (c *ConfigLoader) LoadFromFileForEnvironment(environment Environment) *ConfigLoader {
 	configFileName := c.ConfigFiles[environment]
 	if c.FileExtension == DOTENV && configFileName == defaultCustomConfigFile {
@@ -185,6 +211,8 @@ func (c *ConfigLoader) LoadFromFileForEnvironment(environment Environment) *Conf
 	return c
 }
 
+// LoadFromFile can be used to load a specific config file when using custom load behavior.
+// It will not use the LoadPath, so the full path to config file should be provided.
 func (c *ConfigLoader) LoadFromFile(filePath string) *ConfigLoader {
 	c.loadOrder = append(c.loadOrder, loadOrderItem{
 		file:          filePath,
@@ -194,6 +222,8 @@ func (c *ConfigLoader) LoadFromFile(filePath string) *ConfigLoader {
 	return c
 }
 
+// LoadFromConditionalFile can be used to load a config file only when the condition of the conditionFunc is met.
+// It will not use the LoadPath, so the full path to config file should be provided.
 func (c *ConfigLoader) LoadFromConditionalFile(filePath string, conditionFunc ConditionalLoadFunc) *ConfigLoader {
 	c.loadOrder = append(c.loadOrder, loadOrderItem{
 		file:          filePath,
@@ -203,6 +233,7 @@ func (c *ConfigLoader) LoadFromConditionalFile(filePath string, conditionFunc Co
 	return c
 }
 
+// LoadInto will finish the ConfigLoader and execute the load process. The provided config struct should be a pointer.
 func (c *ConfigLoader) LoadInto(cfg interface{}) error {
 	switch c.LoadBehavior {
 	case LoadBehaviorUnknown:
