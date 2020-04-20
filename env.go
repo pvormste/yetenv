@@ -13,8 +13,10 @@ import (
 const (
 	environmentVariableValueProduction = "production"
 	environmentVariableValueStaging    = "staging"
+	environmentVariableValueTest       = "test"
 
 	defaultDevelopConfigFile    = "cfg.dev"
+	defaultTestConfigFile       = "cfg.test"
 	defaultStagingConfigFile    = "cfg.staging"
 	defaultProductionConfigFile = "cfg.prod"
 	defaultCustomConfigFile     = "cfg"
@@ -26,6 +28,7 @@ type Environment string
 const (
 	Production Environment = "production"
 	Staging    Environment = "staging"
+	Test       Environment = "test"
 	Develop    Environment = "develop"
 	Custom     Environment = "custom"
 )
@@ -46,6 +49,11 @@ type ConditionalLoadFunc func(configLoader *ConfigLoader, currentEnvironment Env
 // DefaultConditionForDevelopEnvironment retuns true when the current environment is Develop otherwise false.
 var DefaultConditionForDevelopEnvironment = func(configLoader *ConfigLoader, currentEnvironment Environment) bool {
 	return currentEnvironment == Develop
+}
+
+// DefaultConditionForDevelopEnvironment retuns true when the current environment is Develop otherwise false.
+var DefaultConditionForTestEnvironment = func(configLoader *ConfigLoader, currentEnvironment Environment) bool {
+	return currentEnvironment == Test
 }
 
 // DefaultConditionForStagingEnvironment returns true when the current environment is Staging otherwise false.
@@ -96,6 +104,8 @@ func environmentFromVariableValue(variableValue string) Environment {
 		return Production
 	case environmentVariableValueStaging:
 		return Staging
+	case environmentVariableValueTest:
+		return Test
 	}
 
 	return Develop
@@ -119,6 +129,7 @@ func NewConfigLoader() *ConfigLoader {
 		FileExtension: DOTENV,
 		ConfigFiles: map[Environment]string{
 			Develop:    defaultDevelopConfigFile,
+			Test:       defaultTestConfigFile,
 			Staging:    defaultStagingConfigFile,
 			Production: defaultProductionConfigFile,
 			Custom:     defaultCustomConfigFile,
@@ -145,6 +156,7 @@ func (c *ConfigLoader) UseFileProcessor(extension ConfigFileExtension) *ConfigLo
 // UseFileNameForEnvironment can be used to change the config file name for a specific environment.
 // Default file names are:
 // Develop     -> 'cfg.dev'
+// Develop     -> 'cfg.test'
 // Staging     -> 'cfg.staging'
 // Production  -> 'cfg.prod'
 // Custom      -> 'cfg' or '.env'
@@ -200,6 +212,8 @@ func (c *ConfigLoader) LoadFromFileForEnvironment(environment Environment) *Conf
 	switch environment {
 	case Develop:
 		c.LoadFromConditionalFile(fullFilePath, DefaultConditionForDevelopEnvironment)
+	case Test:
+		c.LoadFromConditionalFile(fullFilePath, DefaultConditionForTestEnvironment)
 	case Staging:
 		c.LoadFromConditionalFile(fullFilePath, DefaultConditionForStagingEnvironment)
 	case Production:
@@ -284,6 +298,7 @@ func (c *ConfigLoader) setupDefaultLoadBehavior() {
 	c.loadOrder = []loadOrderItem{}
 
 	c.LoadFromFileForEnvironment(Develop)
+	c.LoadFromFileForEnvironment(Test)
 	c.LoadFromFileForEnvironment(Staging)
 	c.LoadFromFileForEnvironment(Production)
 	c.LoadFromFileForEnvironment(Custom)
