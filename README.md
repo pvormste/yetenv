@@ -26,15 +26,17 @@ The `ENVIRONMENT` values are not case-sensitives.
 | ------------------- | -------- |
 | `production` | yetenv.Production |
 | `staging` | yetenv.Staging |
+| `test` | yetenv.Test |
 | any other value | yetenv.Develop |
 
 #### Using the defaults
 
 Shell:
 ```bash
-$ ENVIRONMENT="production" go run main.go   # yetenv.Production
-$ ENVIRONMENT="staging" go run main.go      # yetenv.Staging
-$ ENVIRONMENT="test" go run main.go         # yetenv.Develop
+$ ENVIRONMENT="production" go run main.go  # yetenv.Production
+$ ENVIRONMENT="staging" go run main.go     # yetenv.Staging
+$ ENVIRONMENT="test" go run main.go        # yetenv.Test
+$ ENVIRONMENT="local" go run main.go       # yetenv.Develop
 ```
 
 Go Code:
@@ -46,6 +48,8 @@ case yetenv.Production:
     // Do something in production environment
 case yetenv.Staging:
     // Do something in staging environment
+case yetenv.Test:
+    // Do something in test environment
 case yetenv.Develop:
     // Do something in develop environment
 }
@@ -70,6 +74,8 @@ case yetenv.Production:
     // Do something in production environment
 case yetenv.Staging:
     // Do something in staging environment
+case yetenv.Test:
+    // Do something in test environment
 case yetenv.Develop:
     // Do something in develop environment
 }
@@ -81,7 +87,8 @@ Shell:
 ```bash
 $ APP_ENV="production" go run main.go   # yetenv.Production
 $ APP_ENV="staging" go run main.go      # yetenv.Staging
-$ APP_ENV="test" go run main.go         # yetenv.Develop
+$ APP_ENV="test" go run main.go      # yetenv.Staging
+$ APP_ENV="local" go run main.go         # yetenv.Develop
 ```
 
 Go Code:
@@ -93,6 +100,8 @@ case yetenv.Production:
     // Do something in production environment
 case yetenv.Staging:
     // Do something in staging environment
+case yetenv.Test:
+    // Do something in staging environment
 case yetenv.Develop:
     // Do something in develop environment
 }
@@ -103,12 +112,13 @@ The config loader is able to load a configuration from one or more files into a 
 it uses the [cleanenv package](https://github.com/ilyakaznacheev/cleanenv) under the hood - so please have a look into their
 documentation to get familar about the usage of configuration structs.
 
-It also comes with a set of defaults so it can be used with zero configuration out of the box. Nevertheless it is possible to
-customize the behavior of the ConfigLoader, so it gets in you way.
+It also comes with a set of defaults, so it can be used with zero configuration out of the box. Nevertheless it is possible to
+customize the behavior of the ConfigLoader, so it doesn't get in your way.
 
 #### Default Load Behavior
 The default load behavior works like this depending on the environment:
  - For `Develop`: Load from `./cfg.dev.env` and overwrite it by `./.env` and OS environment values.
+ - For `Test`: Load from `./cfg.test.env` and overwrite it by `./.env` and OS environment values.
  - For `Staging`: Load from `./cfg.staging.env` and overwrite it by `./.env` and OS environment values.
  - For `Production`: Load from `./cfg.prod.env` and overwrite it by `./.env` and OS environment values.
  
@@ -121,6 +131,7 @@ err := yetenv.NewConfigLoader().
 
 ##### Change load path
  - For `Develop`: Load from `./config/cfg.dev.env` and overwrite it by `./config/.env` and OS environment values.
+ - For `Test`: Load from `./config/cfg.test.env` and overwrite it by `./config/.env` and OS environment values.
  - For `Staging`: Load from `./config/cfg.staging.env` and overwrite it by `./config/.env` and OS environment values.
  - For `Production`: Load from `./config/cfg.prod.env` and overwrite it by `./config/.env` and OS environment values.
  
@@ -134,6 +145,7 @@ err := yetenv.NewConfigLoader().
 
 ##### Change file processor
  - For `Develop`: Load from `./cfg.dev.yaml` and overwrite it by `./cfg.yaml` and OS environment values.
+ - For `Test`: Load from `./cfg.test.yaml` and overwrite it by `./cfg.yaml` and OS environment values.
  - For `Staging`: Load from `./cfg.staging.yaml` and overwrite it by `./cfg.yaml` and OS environment values.
  - For `Production`: Load from `./cfg.prod.yaml` and overwrite it by `./cfg.yaml` and OS environment values.
  
@@ -147,14 +159,16 @@ err := yetenv.NewConfigLoader().
 
 ##### Change file name for a specific environment
 The default load behavior works like this depending on the environment:
- - For `Develop`: Load from `./cfg.test.env` and overwrite it by `./.env` and OS environment values.
+ - For `Develop`: Load from `./cfg.local.env` and overwrite it by `./.env` and OS environment values.
+ - For `Test`: Load from `./cfg.testing.env` and overwrite it by `./.env` and OS environment values.
  - For `Staging`: Load from `./cfg.qa.env` and overwrite it by `./.env` and OS environment values.
  - For `Production`: Load from `./cfg.production.env` and overwrite it by `./.env` and OS environment values.
  
  ```go
 c := Config{}
 err := yetenv.NewConfigLoader().
-    UseFileNameForEnvironment(yetenv.Develop, "cfg.test").
+    UseFileNameForEnvironment(yetenv.Develop, "cfg.local").
+    UseFileNameForEnvironment(yetenv.Test, "cfg.testing").
     UseFileNameForEnvironment(yetenv.Staging, "cfg.qa").
     UseFileNameForEnvironment(yetenv.Production, "cfg.production").
     UseDefaultLoadBehavior().
@@ -186,13 +200,13 @@ setting methods.
 | UseEnvironment() | `LoadFromFileForEnvironment()` or `LoadFromConditionalFile()` |
 
 ##### Example for a custom load behavior
- - For `Develop` and `Staging`: Load from `./cfg.base.env` and overwrite by OS environment values.
+ - For `Develop` and `Staging` and `Test`: Load from `./cfg.base.env` and overwrite by OS environment values.
  - For `Production`: Load from `./config/cfg.prod.yaml` and overwrite by OS environment values.
  - For `All Environments`: Load from `./other-config/cfg.toml` and  overwrite by OS environment values.
 
  ```go
 developAndStagingCondition := func(configLoader *ConfigLoader, currentEnvironment Environment) bool {
-    return currentEnvironment == Develop || currentEnvironment == Staging
+    return currentEnvironment == yetenv.Develop || currentEnvironment == yetenv.Staging || currentEnvironment == yetenv.Test
 }
 
 customEnvironment := yetenv.Staging
@@ -208,4 +222,4 @@ err := yetenv.NewConfigLoader().
     LoadInto(&c)
 ```
 
-You see you can do very complicated things with it - I personally would recommend to keep it simple :-).
+As you can see: you can do very complicated things with it - I personally would recommend to keep it simple :-).
