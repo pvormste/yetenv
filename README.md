@@ -61,7 +61,8 @@ Shell:
 ```bash
 $ APP_ENV="production" go run main.go   # yetenv.Production
 $ APP_ENV="staging" go run main.go      # yetenv.Staging
-$ APP_ENV="test" go run main.go         # yetenv.Develop
+$ APP_ENV="test" go run main.go         # yetenv.Test
+$ APP_ENV="local" go run main.go         # yetenv.Develop
 ```
 
 Go Code:
@@ -87,8 +88,8 @@ Shell:
 ```bash
 $ APP_ENV="production" go run main.go   # yetenv.Production
 $ APP_ENV="staging" go run main.go      # yetenv.Staging
-$ APP_ENV="test" go run main.go      # yetenv.Staging
-$ APP_ENV="local" go run main.go         # yetenv.Develop
+$ APP_ENV="test" go run main.go         # yetenv.Test
+$ APP_ENV="local" go run main.go        # yetenv.Develop
 ```
 
 Go Code:
