@@ -4,6 +4,8 @@ github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/ilyakaznacheev/cleanenv v1.2.1 h1:+L4jB4YPPbqia6tkJeZRDw74MkUsnb9uEjn5ceu3ygk=
 github.com/ilyakaznacheev/cleanenv v1.2.1/go.mod h1:53X9Yx1hcUGX8A+GKNMlYvGhuQRx3B86n4wgt3tbYVA=
+github.com/ilyakaznacheev/cleanenv v1.2.2 h1:VIuY3GshV+7DvTYoKbUB1hQ6IkeHwmgl5kLFhfsxlAg=
+github.com/ilyakaznacheev/cleanenv v1.2.2/go.mod h1:53X9Yx1hcUGX8A+GKNMlYvGhuQRx3B86n4wgt3tbYVA=
 github.com/joho/godotenv v1.3.0 h1:Zjp+RcGpHhGlrMbJzXTrZZPrWj+1vfm90La1wgB6Bhc=
 github.com/joho/godotenv v1.3.0/go.mod h1:7hK45KPybAkOC6peb+G5yklZfMxEjkZhHbwpqxOKXbg=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
